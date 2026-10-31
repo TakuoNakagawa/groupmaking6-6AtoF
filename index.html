@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>36名 6グループ×6役割 編成ツール</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+    
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    
+    /* 班（グループ1〜6）ごとのテーマカラー定義 */
+    .group-theme-1 { --grp-border: #3b82f6; --grp-bg: #eff6ff; --grp-header: #2563eb; --grp-badge: #dbeafe; --grp-text: #1e40af; }
+    .group-theme-2 { --grp-border: #10b981; --grp-bg: #ecfdf5; --grp-header: #059669; --grp-badge: #d1fae5; --grp-text: #065f46; }
+    .group-theme-3 { --grp-border: #f59e0b; --grp-bg: #fffbeb; --grp-header: #d97706; --grp-badge: #fef3c7; --grp-text: #92400e; }
+    .group-theme-4 { --grp-border: #8b5cf6; --grp-bg: #f5f3ff; --grp-header: #7c3aed; --grp-badge: #ede9fe; --grp-text: #5b21b6; }
+    .group-theme-5 { --grp-border: #ec4899; --grp-bg: #fdf2f8; --grp-header: #db2777; --grp-badge: #fce7f3; --grp-text: #9d174d; }
+    .group-theme-6 { --grp-border: #06b6d4; --grp-bg: #ecfeff; --grp-header: #0891b2; --grp-badge: #cffafe; --grp-text: #155e75; }
+
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      body {
+        background-color: white !important;
+        color: black !important;
+      }
+      .print-shadow-none {
+        box-shadow: none !important;
+        border: 1px solid #cbd5e1 !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-indigo-600 text-white shadow-md no-print sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl font-bold shadow-inner">
+          <i class="fa-solid fa-users-gear text-amber-300"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight">36名 6グループ×役割編成ツール</h1>
+          <p class="text-xs text-indigo-100">6班 × 役割A〜Fをワンクリック自動割り振り</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="btn-quick-sample" class="px-3 py-1.5 text-xs font-medium bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg transition shadow-sm">
+          <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>サンプル36名読込
+        </button>
+        <button id="btn-print" class="px-3 py-1.5 text-xs font-medium bg-white text-indigo-700 hover:bg-slate-100 rounded-lg transition shadow-sm flex items-center gap-1">
+          <i class="fa-solid fa-print"></i> 印刷 / PDF保存
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 py-6">
+
+    <!-- Top Action Toolbar (No-Print) -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-6 no-print">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        
+        <!-- Quick stats & Status -->
+        <div class="flex items-center gap-4 flex-wrap">
+          <div class="bg-slate-100 rounded-xl px-4 py-2 border border-slate-200">
+            <span class="text-xs text-slate-500 block font-medium">現在の生徒数</span>
+            <div class="flex items-baseline gap-1">
+              <span id="student-count-display" class="text-2xl font-bold text-indigo-600">36</span>
+              <span class="text-xs font-medium text-slate-500">/ 36 名</span>
+            </div>
+          </div>
+
+          <div class="flex flex-col justify-center">
+            <span class="text-xs font-semibold text-slate-700">編成条件</span>
+            <span class="text-xs text-slate-500">6班 (各6人) × 各班に役割 A・B・C・D・E・F を1名ずつ配分</span>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="btn-open-roster" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition flex items-center gap-2">
+            <i class="fa-solid fa-list-check text-slate-500"></i> 名簿・役割名を編集
+          </button>
+
+          <button id="btn-random-generate" class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-bold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-2 transform active:scale-95">
+            <i class="fa-solid fa-dice text-amber-300 text-lg"></i> ランダムでグループ分け実行
+          </button>
+
+          <button id="btn-export-csv" class="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-file-csv"></i> CSV出力
+          </button>
+        </div>
+      </div>
+
+      <!-- Notification Alert -->
+      <div id="notice-msg" class="mt-3 text-xs hidden px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 flex items-center justify-between">
+        <span id="notice-text">メッセージ</span>
+        <button onclick="document.getElementById('notice-msg').classList.add('hidden')" class="text-amber-600 hover:text-amber-900 ml-2">&times;</button>
+      </div>
+    </div>
+
+    <!-- Group Color Guide & Role Legend -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      <!-- Group Color Bar -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2.5 flex items-center gap-1.5">
+          <i class="fa-solid fa-layer-group text-indigo-500"></i> グループ別カラー識別
+        </h2>
+        <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          <div class="p-2 rounded-xl border-2 border-blue-400 bg-blue-50/70 text-center">
+            <span class="block text-xs font-black text-blue-800">第1班</span>
+            <span class="text-[10px] text-blue-600">青色</span>
+          </div>
+          <div class="p-2 rounded-xl border-2 border-emerald-400 bg-emerald-50/70 text-center">
+            <span class="block text-xs font-black text-emerald-800">第2班</span>
+            <span class="text-[10px] text-emerald-600">緑色</span>
+          </div>
+          <div class="p-2 rounded-xl border-2 border-amber-400 bg-amber-50/70 text-center">
+            <span class="block text-xs font-black text-amber-800">第3班</span>
+            <span class="text-[10px] text-amber-600">橙/黄</span>
+          </div>
+          <div class="p-2 rounded-xl border-2 border-purple-400 bg-purple-50/70 text-center">
+            <span class="block text-xs font-black text-purple-800">第4班</span>
+            <span class="text-[10px] text-purple-600">紫色</span>
+          </div>
+          <div class="p-2 rounded-xl border-2 border-pink-400 bg-pink-50/70 text-center">
+            <span class="block text-xs font-black text-pink-800">第5班</span>
+            <span class="text-[10px] text-pink-600">桃色</span>
+          </div>
+          <div class="p-2 rounded-xl border-2 border-cyan-400 bg-cyan-50/70 text-center">
+            <span class="block text-xs font-black text-cyan-800">第6班</span>
+            <span class="text-[10px] text-cyan-600">水色</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Role Legend Bar -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between mb-2.5">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+            <i class="fa-solid fa-tags text-indigo-500"></i> 各班内の役割 (A〜F)
+          </h2>
+          <span class="text-[11px] text-slate-400">各班に1名ずつ（A〜F）を配分</span>
+        </div>
+        <div id="role-legend-container" class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- View Switcher Tabs -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4 no-print">
+      <div class="inline-flex p-1 bg-slate-200/80 rounded-xl">
+        <button id="view-mode-classroom" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-indigo-700 shadow-sm flex items-center gap-2">
+          <i class="fa-solid fa-chalkboard-user"></i> 教室座席ビュー (6列×6人)
+        </button>
+        <button id="view-mode-groups" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-table-cells-large"></i> 班別カードビュー
+        </button>
+      </div>
+
+      <div id="classroom-options" class="flex items-center gap-2 text-xs text-slate-600 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm">
+        <span class="text-slate-500 font-medium"><i class="fa-solid fa-arrows-split-up-and-left mr-1"></i>班の配置形式:</span>
+        <select id="seat-layout-mode" class="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+          <option value="island" selected>【島型】2列×3人 (集まりやすい6つの島)</option>
+          <option value="column">【縦列】1列＝1グループ (縦6人×6列)</option>
+          <option value="row">【横列】1行＝1グループ (横6人×6行)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Classroom Seating View Container -->
+    <div id="classroom-container" class="space-y-4">
+      <!-- Blackboard / Teacher's Desk -->
+      <div class="bg-gradient-to-b from-emerald-800 to-emerald-900 text-white py-2.5 px-6 rounded-xl shadow-md text-center max-w-xl mx-auto border-4 border-amber-800 flex items-center justify-center gap-3">
+        <i class="fa-solid fa-chalkboard text-emerald-300"></i>
+        <span class="text-xs font-extrabold tracking-widest uppercase">黒 板 / 教 卓 （ 前 方 ）</span>
+      </div>
+
+      <!-- 6x6 Desk Grid -->
+      <div class="overflow-x-auto pb-4">
+        <div id="classroom-columns-wrapper" class="min-w-[860px] p-4 bg-slate-100/70 rounded-2xl border border-slate-200">
+          <div id="classroom-grid">
+            <!-- 36 Desks rendered by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Groups Grid (Card View) -->
+    <div id="groups-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 hidden">
+      <!-- 6 Groups rendered by JS -->
+    </div>
+  </main>
+
+  <!-- Modal: Edit Roster & Role Customization -->
+  <div id="roster-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-user-pen text-indigo-600"></i>
+          <h3 class="font-bold text-slate-800">生徒名簿と役割名の設定</h3>
+        </div>
+        <button id="btn-close-modal" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 overflow-y-auto space-y-6">
+        
+        <!-- Role Names Config -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+            各役割の表示ラベル (A〜F)
+          </label>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="role-inputs-grid">
+            <!-- Inputs for A-F labels -->
+          </div>
+        </div>
+
+        <hr class="border-slate-200">
+
+        <!-- Student Names Textarea -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label for="roster-textarea" class="text-xs font-bold uppercase tracking-wider text-slate-600">
+              生徒名簿リスト（1行につき1名・推奨36名）
+            </label>
+            <span id="modal-roster-count" class="text-xs px-2 py-0.5 rounded font-bold bg-indigo-50 text-indigo-700">36名入力済</span>
+          </div>
+          <p class="text-xs text-slate-500 mb-2">改行で区切って入力してください。Excelやスプレッドシートからそのままコピペできます。</p>
+          <textarea id="roster-textarea" rows="9" class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono resize-y leading-relaxed" placeholder="1: 佐藤 太郎&#10;2: 鈴木 花子&#10;..."></textarea>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+        <button id="btn-reset-roster" class="px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition">
+          初期番号 (1〜36番) に戻す
+        </button>
+        <div class="flex gap-2">
+          <button id="btn-cancel-modal" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition">
+            キャンセル
+          </button>
+          <button id="btn-save-modal" class="px-5 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shadow transition">
+            保存して再構築
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // --- Initial State ---
+    const DEFAULT_ROLES = [
+      { id: 'A', name: 'A', color: 'A' },
+      { id: 'B', name: 'B', color: 'B' },
+      { id: 'C', name: 'C', color: 'C' },
+      { id: 'D', name: 'D', color: 'D' },
+      { id: 'E', name: 'E', color: 'E' },
+      { id: 'F', name: 'F', color: 'F' }
+    ];
+
+    // Generate 36 realistic mock student names
+    const SAMPLE_STUDENTS = [
+      "相沢 翔太", "青木 陽葵", "秋山 蓮", "飯田 結菜", "伊藤 悠斗", "井上 陽菜",
+      "上田 大和", "内田 芽依", "遠藤 湊", "太田 心春", "岡田 樹", "小川 葵",
+      "加藤 颯太", "金子 紬", "川口 蒼空", "木村 咲良", "小林 陸", "近藤 莉子",
+      "斉藤 律", "坂本 結衣", "佐藤 颯", "清水 美月", "菅原 晴", "杉山 杏",
+      "高橋 陽翔", "竹内 詩", "田中 暖", "千葉 凛", "中島 颯人", "中村 澪",
+      "西村 碧", "野村 結愛", "橋本 櫂", "林 絢音", "原田 悠真", "福田 琴音"
+    ];
+
+    let currentRoles = JSON.parse(localStorage.getItem('class_roles')) || [...DEFAULT_ROLES];
+    let currentStudents = JSON.parse(localStorage.getItem('class_students')) || [...SAMPLE_STUDENTS];
+
+    // Group Color Palette Settings
+    const GROUP_COLORS = [
+      { id: 1, name: '第1班', border: 'border-blue-400', bg: 'bg-blue-50/60', headerBg: 'bg-blue-600', text: 'text-blue-800', lightBadge: 'bg-blue-100 text-blue-800 border-blue-200' },
+      { id: 2, name: '第2班', border: 'border-emerald-400', bg: 'bg-emerald-50/60', headerBg: 'bg-emerald-600', text: 'text-emerald-800', lightBadge: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+      { id: 3, name: '第3班', border: 'border-amber-400', bg: 'bg-amber-50/60', headerBg: 'bg-amber-600', text: 'text-amber-800', lightBadge: 'bg-amber-100 text-amber-800 border-amber-200' },
+      { id: 4, name: '第4班', border: 'border-purple-400', bg: 'bg-purple-50/60', headerBg: 'bg-purple-600', text: 'text-purple-800', lightBadge: 'bg-purple-100 text-purple-800 border-purple-200' },
+      { id: 5, name: '第5班', border: 'border-pink-400', bg: 'bg-pink-50/60', headerBg: 'bg-pink-600', text: 'text-pink-800', lightBadge: 'bg-pink-100 text-pink-800 border-pink-200' },
+      { id: 6, name: '第6班', border: 'border-cyan-400', bg: 'bg-cyan-50/60', headerBg: 'bg-cyan-600', text: 'text-cyan-800', lightBadge: 'bg-cyan-100 text-cyan-800 border-cyan-200' }
+    ];
+
+    let currentGroups = [];
+    let currentView = 'classroom'; // 'classroom' or 'groups'
+    let seatLayoutMode = 'island'; // 'island' (2列×3人), 'column', or 'row'
+
+    // --- Core Logic ---
+    function init() {
+      renderRoleLegends();
+      renderModalRoleInputs();
+      updateStudentCountDisplay();
+      
+      const savedGroups = localStorage.getItem('class_divided_groups');
+      if (savedGroups) {
+        try {
+          currentGroups = JSON.parse(savedGroups);
+        } catch (e) {
+          divideRandomly();
+        }
+      } else {
+        divideRandomly();
+      }
+
+      renderCurrentView();
+      setupEventListeners();
+    }
+
+    function shuffle(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function divideRandomly() {
+      if (currentStudents.length === 0) {
+        showToast("生徒名簿が登録されていません。");
+        return;
+      }
+
+      const shuffledStudents = shuffle(currentStudents);
+
+      const groups = Array.from({ length: 6 }, (_, idx) => ({
+        id: idx + 1,
+        name: `第 ${idx + 1} 班`,
+        members: []
+      }));
+
+      let studentIndex = 0;
+      for (let g = 0; g < 6; g++) {
+        for (let r = 0; r < 6; r++) {
+          const role = currentRoles[r];
+          const studentName = shuffledStudents[studentIndex] || "（空き）";
+          groups[g].members.push({
+            roleId: role.id,
+            roleName: role.name,
+            studentName: studentName
+          });
+          studentIndex++;
+        }
+      }
+
+      currentGroups = groups;
+      saveState();
+      renderGroups();
+      renderClassroomSeats();
+      showToast("36名を6つの班と役割A〜Fに均等に割り振りました！");
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem('class_divided_groups', JSON.stringify(currentGroups));
+        localStorage.setItem('class_students', JSON.stringify(currentStudents));
+        localStorage.setItem('class_roles', JSON.stringify(currentRoles));
+      } catch (e) {
+        console.warn("Storage quota exceeded or disabled", e);
+      }
+    }
+
+    // --- UI Renderers ---
+    function renderRoleLegends() {
+      const container = document.getElementById('role-legend-container');
+      container.innerHTML = currentRoles.map(r => `
+        <div class="flex items-center justify-center gap-1.5 p-2 rounded-xl border border-slate-200 bg-slate-50 text-center">
+          <span class="w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center bg-slate-800 text-white shadow-xs">
+            ${r.id}
+          </span>
+          <span class="text-xs font-bold text-slate-700 truncate">${r.name}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderModalRoleInputs() {
+      const container = document.getElementById('role-inputs-grid');
+      container.innerHTML = currentRoles.map(r => `
+        <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
+          <span class="w-7 h-7 rounded-lg text-sm font-black flex items-center justify-center bg-slate-800 text-white shadow-xs">
+            ${r.id}
+          </span>
+          <input type="text" data-role-id="${r.id}" value="${r.name}" class="role-name-input text-xs w-full bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium" placeholder="役割名">
+        </div>
+      `).join('');
+    }
+
+    function renderGroups() {
+      const container = document.getElementById('groups-container');
+      container.innerHTML = '';
+
+      currentGroups.forEach((group, gIdx) => {
+        const theme = GROUP_COLORS[gIdx % GROUP_COLORS.length];
+        const groupEl = document.createElement('div');
+        groupEl.className = `bg-white rounded-2xl shadow-sm border-2 ${theme.border} p-5 flex flex-col justify-between print-shadow-none transition-all hover:shadow-md`;
+
+        let html = `
+          <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-xl ${theme.headerBg} text-white font-black text-sm flex items-center justify-center shadow-sm">
+                ${group.id}
+              </span>
+              <h3 class="font-bold text-base ${theme.text}">${group.name}</h3>
+            </div>
+            <span class="text-xs px-2.5 py-1 rounded-full font-bold border ${theme.lightBadge}">
+              ${group.members.filter(m => m.studentName && m.studentName !== "（空き）").length} / 6名
+            </span>
+          </div>
+
+          <div class="space-y-2.5 my-1">
+        `;
+
+        group.members.forEach((member, mIdx) => {
+          const isEmpty = !member.studentName || member.studentName === "（空き）";
+
+          html += `
+            <div class="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50/80 hover:bg-slate-100/80 transition group">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <span class="w-6 h-6 rounded-md text-xs font-black flex items-center justify-center bg-slate-800 text-white shadow-xs shrink-0">
+                  ${member.roleId}
+                </span>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold ${isEmpty ? 'text-slate-400 italic' : 'text-slate-800'} truncate">
+                    ${member.studentName || '（空き）'}
+                  </div>
+                </div>
+              </div>
+              <button onclick="editMemberName(${gIdx}, ${mIdx})" title="名前を編集" class="opacity-0 group-hover:opacity-100 transition text-slate-400 hover:text-indigo-600 p-1 no-print">
+                <i class="fa-solid fa-pen text-xs"></i>
+              </button>
+            </div>
+          `;
+        });
+
+        html += `
+          </div>
+          <div class="pt-3 mt-3 border-t border-slate-100 flex justify-end no-print">
+            <button onclick="shuffleWithinGroup(${gIdx})" class="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition flex items-center gap-1.5">
+              <i class="fa-solid fa-arrows-rotate text-xs"></i> 班内シャッフル
+            </button>
+          </div>
+        `;
+
+        groupEl.innerHTML = html;
+        container.appendChild(groupEl);
+      });
+    }
+
+    function renderClassroomSeats() {
+      const grid = document.getElementById('classroom-grid');
+      grid.innerHTML = '';
+
+      if (seatLayoutMode === 'island') {
+        grid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
+
+        const islandPositions = [
+          { label: '左・前方' }, { label: '中央・前方' }, { label: '右・前方' },
+          { label: '左・後方' }, { label: '中央・後方' }, { label: '右・後方' }
+        ];
+
+        for (let gIdx = 0; gIdx < 6; gIdx++) {
+          const group = currentGroups[gIdx];
+          const theme = GROUP_COLORS[gIdx % GROUP_COLORS.length];
+          const pos = islandPositions[gIdx];
+
+          const islandCard = document.createElement('div');
+          islandCard.className = `p-3.5 rounded-2xl border-2 ${theme.border} ${theme.bg} shadow-sm flex flex-col gap-2.5`;
+
+          const islandHeader = document.createElement('div');
+          islandHeader.className = `${theme.headerBg} text-white py-1.5 px-3 rounded-xl font-bold text-xs shadow-xs flex items-center justify-between`;
+          islandHeader.innerHTML = `
+            <div class="flex items-center gap-1.5">
+              <i class="fa-solid fa-users text-[11px]"></i>
+              <span class="font-black text-sm">${group ? group.name : `第${gIdx + 1}班`}</span>
+            </div>
+            <span class="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-medium">${pos.label} (2列×3人)</span>
+          `;
+          islandCard.appendChild(islandHeader);
+
+          const deskGrid = document.createElement('div');
+          deskGrid.className = "grid grid-cols-2 gap-2";
+
+          for (let mIdx = 0; mIdx < 6; mIdx++) {
+            const member = group ? group.members[mIdx] : null;
+            const deskCol = (mIdx % 2) + 1;
+            const deskRow = Math.floor(mIdx / 2) + 1;
+            deskGrid.appendChild(createDeskElement(member, gIdx, mIdx, deskCol, deskRow, theme, `席${deskRow}-${deskCol}`));
+          }
+
+          islandCard.appendChild(deskGrid);
+          grid.appendChild(islandCard);
+        }
+
+      } else if (seatLayoutMode === 'column') {
+        grid.className = "grid grid-cols-6 gap-3.5";
+
+        for (let col = 0; col < 6; col++) {
+          const groupIdx = col;
+          const group = currentGroups[groupIdx];
+          const theme = GROUP_COLORS[groupIdx % GROUP_COLORS.length];
+
+          const colWrapper = document.createElement('div');
+          colWrapper.className = `flex flex-col gap-2.5 p-2 rounded-2xl border-2 ${theme.border} ${theme.bg} shadow-sm`;
+
+          const colHeader = document.createElement('div');
+          colHeader.className = `${theme.headerBg} text-white text-center py-1.5 px-2 rounded-xl font-black text-xs shadow-sm flex items-center justify-center gap-1.5`;
+          colHeader.innerHTML = `
+            <i class="fa-solid fa-users text-[10px]"></i>
+            <span>第${groupIdx + 1}班 (${col + 1}列目)</span>
+          `;
+          colWrapper.appendChild(colHeader);
+
+          for (let row = 0; row < 6; row++) {
+            const memberIdx = row;
+            const member = group ? group.members[memberIdx] : null;
+            colWrapper.appendChild(createDeskElement(member, groupIdx, memberIdx, col + 1, row + 1, theme, `${col + 1}列-${row + 1}番`));
+          }
+
+          grid.appendChild(colWrapper);
+        }
+      } else {
+        grid.className = "grid grid-cols-6 gap-2.5";
+
+        for (let row = 0; row < 6; row++) {
+          for (let col = 0; col < 6; col++) {
+            const groupIdx = row;
+            const memberIdx = col;
+            const group = currentGroups[groupIdx];
+            const theme = GROUP_COLORS[groupIdx % GROUP_COLORS.length];
+            const member = group ? group.members[memberIdx] : null;
+
+            grid.appendChild(createDeskElement(member, groupIdx, memberIdx, col + 1, row + 1, theme, `${row + 1}行-${col + 1}番`));
+          }
+        }
+      }
+    }
+
+    function createDeskElement(member, groupIdx, memberIdx, col, row, theme, coordLabel) {
+      const deskEl = document.createElement('div');
+      const isEmpty = !member || !member.studentName || member.studentName === "（空き）";
+
+      deskEl.className = `bg-white rounded-xl p-2.5 border-2 ${theme.border} shadow-xs hover:shadow-md transition-all flex flex-col justify-between min-h-[82px] relative group`;
+
+      if (member) {
+        deskEl.innerHTML = `
+          <div class="flex items-center justify-between gap-1 mb-1">
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${theme.lightBadge} border">
+              第${groupIdx + 1}班
+            </span>
+            <div class="flex items-center gap-1">
+              <span class="w-6 h-6 rounded-md text-xs font-black flex items-center justify-center bg-slate-800 text-white shadow-xs">
+                ${member.roleId}
+              </span>
+            </div>
+          </div>
+
+          <div class="my-auto py-1 text-center">
+            <div class="text-sm font-black ${isEmpty ? 'text-slate-400 italic' : 'text-slate-800'} truncate">
+              ${member.studentName || '（空き）'}
+            </div>
+          </div>
+
+          <div class="pt-1 border-t border-slate-100 flex items-center justify-between text-[9px] text-slate-400 font-mono">
+            <span>${coordLabel}</span>
+            <button onclick="editMemberName(${groupIdx}, ${memberIdx})" title="名前を編集" class="opacity-0 group-hover:opacity-100 transition text-slate-400 hover:text-indigo-600 no-print">
+              <i class="fa-solid fa-pen text-[9px]"></i>
+            </button>
+          </div>
+        `;
+      }
+
+      return deskEl;
+    }
+
+    function renderCurrentView() {
+      const classroomContainer = document.getElementById('classroom-container');
+      const groupsContainer = document.getElementById('groups-container');
+      const classroomOptions = document.getElementById('classroom-options');
+      const btnClassroom = document.getElementById('view-mode-classroom');
+      const btnGroups = document.getElementById('view-mode-groups');
+
+      if (currentView === 'classroom') {
+        classroomContainer.classList.remove('hidden');
+        groupsContainer.classList.add('hidden');
+        classroomOptions.classList.remove('hidden');
+
+        btnClassroom.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-indigo-700 shadow-sm flex items-center gap-2";
+        btnGroups.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 flex items-center gap-2";
+        renderClassroomSeats();
+      } else {
+        classroomContainer.classList.add('hidden');
+        groupsContainer.classList.remove('hidden');
+        classroomOptions.classList.add('hidden');
+
+        btnGroups.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-indigo-700 shadow-sm flex items-center gap-2";
+        btnClassroom.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 flex items-center gap-2";
+        renderGroups();
+      }
+    }
+
+    function updateStudentCountDisplay() {
+      document.getElementById('student-count-display').innerText = currentStudents.length;
+    }
+
+    window.editMemberName = function(groupIndex, memberIndex) {
+      const currentName = currentGroups[groupIndex].members[memberIndex].studentName;
+      const roleLetter = currentGroups[groupIndex].members[memberIndex].roleId;
+      const newName = prompt(`第${groupIndex + 1}班 役割 [${roleLetter}] の生徒名を入力してください:`, currentName);
+      if (newName !== null && newName.trim() !== '') {
+        currentGroups[groupIndex].members[memberIndex].studentName = newName.trim();
+        saveState();
+        renderGroups();
+        renderClassroomSeats();
+      }
+    };
+
+    window.shuffleWithinGroup = function(groupIndex) {
+      const members = currentGroups[groupIndex].members;
+      const names = members.map(m => m.studentName);
+      const shuffledNames = shuffle(names);
+      
+      members.forEach((m, idx) => {
+        m.studentName = shuffledNames[idx];
+      });
+
+      saveState();
+      renderGroups();
+      renderClassroomSeats();
+      showToast(`第${groupIndex + 1}班の役割を班内で再シャッフルしました。`);
+    };
+
+    function showToast(msg) {
+      const el = document.getElementById('notice-msg');
+      const text = document.getElementById('notice-text');
+      text.innerText = msg;
+      el.classList.remove('hidden');
+      setTimeout(() => {
+        el.classList.add('hidden');
+      }, 4000);
+    }
+
+    function setupEventListeners() {
+      document.getElementById('btn-random-generate').addEventListener('click', () => {
+        divideRandomly();
+      });
+
+      document.getElementById('view-mode-classroom').addEventListener('click', () => {
+        currentView = 'classroom';
+        renderCurrentView();
+      });
+
+      document.getElementById('view-mode-groups').addEventListener('click', () => {
+        currentView = 'groups';
+        renderCurrentView();
+      });
+
+      document.getElementById('seat-layout-mode').addEventListener('change', (e) => {
+        seatLayoutMode = e.target.value;
+        renderClassroomSeats();
+      });
+
+      document.getElementById('btn-quick-sample').addEventListener('click', () => {
+        currentStudents = [...SAMPLE_STUDENTS];
+        updateStudentCountDisplay();
+        divideRandomly();
+      });
+
+      document.getElementById('btn-print').addEventListener('click', () => {
+        window.print();
+      });
+
+      document.getElementById('btn-export-csv').addEventListener('click', () => {
+        exportCSV();
+      });
+
+      const modal = document.getElementById('roster-modal');
+      const textarea = document.getElementById('roster-textarea');
+      const modalCount = document.getElementById('modal-roster-count');
+
+      document.getElementById('btn-open-roster').addEventListener('click', () => {
+        textarea.value = currentStudents.join('\n');
+        updateModalCount();
+        renderModalRoleInputs();
+        modal.classList.remove('hidden');
+      });
+
+      const closeModal = () => modal.classList.add('hidden');
+      document.getElementById('btn-close-modal').addEventListener('click', closeModal);
+      document.getElementById('btn-cancel-modal').addEventListener('click', closeModal);
+
+      textarea.addEventListener('input', updateModalCount);
+
+      function updateModalCount() {
+        const lines = textarea.value.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+        modalCount.innerText = `${lines.length}名 入力中`;
+        if (lines.length === 36) {
+          modalCount.className = "text-xs px-2 py-0.5 rounded font-bold bg-emerald-50 text-emerald-700";
+        } else {
+          modalCount.className = "text-xs px-2 py-0.5 rounded font-bold bg-amber-50 text-amber-700";
+        }
+      }
+
+      document.getElementById('btn-reset-roster').addEventListener('click', () => {
+        const numbered = Array.from({ length: 36 }, (_, i) => `生徒 ${i + 1}番`);
+        textarea.value = numbered.join('\n');
+        updateModalCount();
+      });
+
+      document.getElementById('btn-save-modal').addEventListener('click', () => {
+        const lines = textarea.value.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+        
+        if (lines.length === 0) {
+          showToast("1名以上入力してください。");
+          return;
+        }
+
+        currentStudents = lines;
+
+        const roleInputs = document.querySelectorAll('.role-name-input');
+        roleInputs.forEach(input => {
+          const roleId = input.getAttribute('data-role-id');
+          const roleObj = currentRoles.find(r => r.id === roleId);
+          if (roleObj && input.value.trim() !== '') {
+            roleObj.name = input.value.trim();
+          }
+        });
+
+        currentGroups.forEach(g => {
+          g.members.forEach(m => {
+            const r = currentRoles.find(role => role.id === m.roleId);
+            if (r) m.roleName = r.name;
+          });
+        });
+
+        updateStudentCountDisplay();
+        renderRoleLegends();
+        saveState();
+        closeModal();
+
+        divideRandomly();
+      });
+    }
+
+    function exportCSV() {
+      let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+      csvContent += "グループ名,役割記号,生徒氏名\r\n";
+
+      currentGroups.forEach(group => {
+        group.members.forEach(member => {
+          const cleanName = (member.studentName || "").replace(/"/g, '""');
+          csvContent += `"${group.name}","${member.roleId}","${cleanName}"\r\n`;
+        });
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `グループ・役割編成結果_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    window.onload = function() {
+      init();
+    };
+  </script>
+</body>
+</html>
